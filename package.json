@@ -1,0 +1,108 @@
+{
+  "name": "polysport-api",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/apps/api/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./apps/api/test/jest-e2e.json",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "typeorm:api": "typeorm-ts-node-commonjs -d apps/api/typeOrm.config.ts",
+    "typeorm:api:entity:create": "typeorm-ts-node-commonjs entity:create apps/api/src/db/entities/$npm_config_name",
+    "migration:api:create": "typeorm migration:create apps/api/src/db/migrations/$npm_config_name",
+    "migration:api:generate": "npm run typeorm:api migration:generate apps/api/src/db/migrations/$npm_config_name",
+    "migration:api:show": "npm run typeorm:api migration:show",
+    "migration:api:run": "npm run typeorm:api migration:run",
+    "migration:api:revert": "npm run typeorm:api migration:revert"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.10.0",
+    "@ethersproject/abi": "^5.7.0",
+    "@liaoliaots/nestjs-redis": "^9.0.5",
+    "@metamask/eth-sig-util": "^5.0.2",
+    "@nestjs/apollo": "^12.0.11",
+    "@nestjs/bull": "^10.0.1",
+    "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^2.3.1",
+    "@nestjs/core": "^9.0.0",
+    "@nestjs/graphql": "^12.0.11",
+    "@nestjs/platform-express": "^9.0.0",
+    "@nestjs/schedule": "^3.0.1",
+    "@nestjs/typeorm": "^9.0.1",
+    "bull": "^4.12.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "decimal.js": "^10.4.3",
+    "ethers": "^5.7.2",
+    "graphql": "^16.8.1",
+    "ioredis": "^5.3.2",
+    "lodash": "^4.17.21",
+    "pg": "^8.9.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.2.0",
+    "starknet": "^5.24.3",
+    "typeorm": "^0.3.12"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^9.0.0",
+    "@nestjs/schematics": "^9.0.0",
+    "@nestjs/testing": "^9.0.0",
+    "@types/express": "^4.17.13",
+    "@types/jest": "29.2.4",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "18.11.18",
+    "@types/supertest": "^2.0.11",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.0.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "29.3.1",
+    "prettier": "^2.3.2",
+    "source-map-support": "^0.5.20",
+    "supertest": "^6.1.3",
+    "ts-jest": "29.0.3",
+    "ts-loader": "^9.2.3",
+    "ts-node": "^10.0.0",
+    "tsconfig-paths": "4.1.1",
+    "typescript": "^4.7.4"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/apps/",
+      "<rootDir>/libs/"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Factory {
+  id: ID!
+  pairCount: Int!
+  totalVolumeUSD: Int!
+  totalVolumeETH: Int!
+  untrackedVolumeUSD: Int!
+  totalLiquidityUSD: Int!
+  totalLiquidityETH: Int!
+  txCount: Int!
+}
+
+type Query {
+  factory: Factory!
+}
