@@ -6,9 +6,7 @@ import { IndexerModule } from './indexer/indexer.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
-import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { ResolverModule } from './resolver/resolver.module';
+import { GameModule } from './game/game.module';
 
 @Module({
   imports: [
@@ -44,14 +42,7 @@ import { ResolverModule } from './resolver/resolver.module';
     }),
     ScheduleModule.forRoot(),
     IndexerModule,
-    // GraphQLModule.forRoot<ApolloDriverConfig>({
-    //   driver: ApolloDriver,
-    //   autoSchemaFile: 'schema.gql',
-    //   playground: true,
-    //   // subscription: true,
-    //   // graphiql: true,
-    // }),
-    ResolverModule,
+    GameModule,
   ],
 })
 export class DexModule {}

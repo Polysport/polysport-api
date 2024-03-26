@@ -1,7 +1,8 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { dbConfig } from './src/app.config';
-import { Chain, NFT } from './src/db/entities';
-import { InitDB1711057239275 } from './src/db/migrations/1711057239275-InitDB';
+import { Chain, NFT, User } from './src/db/entities';
+import { Card } from './src/db/entities/card.entity';
+import { InitDB1711457017552 } from './src/db/migrations/1711457017552-InitDB';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -11,8 +12,8 @@ export const dataSourceOptions: DataSourceOptions = {
   password: dbConfig.password,
   database: dbConfig.database,
   ssl: dbConfig.ssl,
-  entities: [Chain, NFT],
-  migrations: [InitDB1711057239275],
+  entities: [Chain, NFT, User, Card],
+  migrations: [InitDB1711457017552],
 };
 
 export default new DataSource(dataSourceOptions);

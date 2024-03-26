@@ -1,34 +1,30 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { User } from './user.entity';
 
-@ObjectType()
 @Entity()
 export class NFT {
-  @Field(() => ID)
   @PrimaryColumn()
-  id: string;
+  id: number;
 
-  @Field(() => String)
+  @ManyToOne(() => User, (user) => user.nfts, { nullable: true })
+  @JoinColumn({ foreignKeyConstraintName: 'owner' })
+  owner: User;
+
   @Column()
-  owner: string;
+  nftId: number;
 
-  @Field(() => String)
   @Column()
   description: string;
 
-  @Field(() => String)
   @Column()
   name: string;
 
-  @Field(() => String)
   @Column()
   attributes: string;
 
-  @Field(() => String)
   @Column()
   image: string;
 
-  @Field(() => String)
   @Column()
   uri: string;
 }

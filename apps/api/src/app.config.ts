@@ -11,13 +11,18 @@ export const appConfig = {
   mainnet: configService.get('IS_MAINNET') === 'true',
 
   operatorPrivKey: configService.get('OPERATOR_PRIV_KEY'),
+
+  s3PublicUrl: configService.get('S3_PUBLIC_URL'),
   s3Endpoint: configService.get('S3_ENDPOINT'),
   s3Bucket: configService.get('S3_BUCKET'),
   s3AccessKeyId: configService.get('S3_ACCESS_KEY_ID'),
   s3SecretAccessKey: configService.get('S3_SECRET_ACCESS_KEY'),
+
   ipfsBaseUrl: configService.get('IFPS_BASE_URL'),
+
   nftAddress: configService.get('NFT_ADDRESS'),
   tokenAddress: configService.get('TOKEN_ADDRESS'),
+  poolAddress: configService.get('POOL_ADDRESS'),
 };
 
 export const dbConfig = {

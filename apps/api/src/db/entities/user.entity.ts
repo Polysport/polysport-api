@@ -1,21 +1,32 @@
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToOne,
+  PrimaryColumn,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { NFT } from './nft.entity';
+import { Card } from './card.entity';
 
-@ObjectType()
 @Entity()
 export class User {
-  @Field(() => ID)
   @PrimaryColumn()
   id: string; // user address
 
-  @Field(() => String)
-  numOfFlip: string;
+  @Column()
+  numOfFlip: number;
 
-  @Field(() => String)
   @Column()
   rewarded: string;
 
-  @Field(() => Int)
+  @OneToOne(() => NFT, { nullable: true })
+  @JoinColumn()
   burnedNft: NFT;
+
+  @OneToMany(() => Card, (card) => card.user)
+  cards: Card[];
+
+  @OneToMany(() => NFT, (nft) => nft.owner)
+  nfts: NFT[];
 }

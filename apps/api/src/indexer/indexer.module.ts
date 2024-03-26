@@ -6,6 +6,7 @@ import { BullModule } from '@nestjs/bull';
 import { INDEXER_QUEUE_NAME } from '../constants';
 import { IndexerConsumer } from './indexer.consumer';
 import { Web3Module } from '@lib/web3';
+import { GameModule } from '../game/game.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Web3Module } from '@lib/web3';
     }),
     Web3Module,
     TypeOrmModule.forFeature([Chain, NFT]),
+    GameModule,
   ],
   providers: [IndexerService, IndexerConsumer],
   controllers: [],

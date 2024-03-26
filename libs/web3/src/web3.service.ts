@@ -131,6 +131,13 @@ export class Web3Service {
     return wallet._signTypedData(domain, types, value);
   }
 
+  verifySignature(account: string, signature: string, hash: string): boolean {
+    return (
+      ethers.utils.verifyMessage(hash, signature).toLowerCase() ===
+      account.toLowerCase()
+    );
+  }
+
   getTransaction(provider: ethers.providers.Provider, txHash: string) {
     return provider.getTransactionReceipt(txHash);
   }

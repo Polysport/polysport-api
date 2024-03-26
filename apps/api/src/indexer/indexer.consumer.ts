@@ -1,45 +1,54 @@
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
+import { Web3Service } from '@lib/web3';
 import { Process, Processor } from '@nestjs/bull';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bull';
-import Redis from 'ioredis';
-import { Repository } from 'typeorm';
-import { INDEXER_PROCESS_NAME, INDEXER_QUEUE_NAME } from '../constants';
-import { NFT } from '../db/entities';
-import { STARKNET_EVENT } from '../types';
+import { ethers } from 'ethers';
+import * as NftAbi from '../abis/nft.json';
+import { INDEXER_PROCESS_NAME, INDEXER_QUEUE_NAME, TOPIC0 } from '../constants';
+import { GameService } from '../game/game.service';
 
 @Processor(INDEXER_QUEUE_NAME)
 export class IndexerConsumer {
   constructor(
-    @InjectRepository(NFT)
-    private nftRepo: Repository<NFT>,
-    @InjectRedis()
-    private readonly redis: Redis,
+    private readonly web3Service: Web3Service,
+    private gameService: GameService,
   ) {}
 
   @Process(INDEXER_PROCESS_NAME)
-  async processEvents(job: Job<{ events: STARKNET_EVENT[] }>) {
-    const length = job.data.events.length;
-    for (let i = 0; i < length; i++) {
-      const event = job.data.events[i];
-      console.log(
-        '🚀 ~ file: indexer.consumer.ts:50 ~ IndexerConsumer ~ event:',
-        event,
-      );
+  async processEvents(job: Job<{ logs: ethers.providers.Log[] }>) {
+    const nftIface = this.web3Service.getContractInterface(NftAbi);
 
-      // if (event.keys[0] === EVENT_KEYS.pairCreatedKey) {
-      //   await this.handleNewPair(chainId, event);
-      // } else if (event.keys[0] === EVENT_KEYS.syncKey) {
-      //   await this.handleSync(chainId, event);
-      // } else if (event.keys[0] === EVENT_KEYS.mintKey) {
-      //   await this.handleMint(chainId, event);
-      // } else if (event.keys[0] === EVENT_KEYS.swapKey) {
-      //   await this.handleSwap(chainId, event);
-      // } else if (event.keys[0] === EVENT_KEYS.burnKey) {
-      //   await this.handleBurn(chainId, event);
-      // } else if (event.keys[0] === EVENT_KEYS.transferKey) {
-      //   await this.handleTransfer(chainId, event);
-      // }
+    const length = job.data.logs.length;
+    for (let i = 0; i < length; i++) {
+      const log = job.data.logs[i];
+
+      if (log.topics[0] === TOPIC0.mint) {
+        const event = nftIface.decodeEventLog(
+          'NFTMinted',
+          log.data,
+          log.topics,
+        );
+        await this.gameService.addNftMetadata(
+          event.purchaser.toLowerCase(),
+          event.id.toNumber(),
+          event.grade.toNumber(),
+        );
+      } else if (log.topics[0] === TOPIC0.burn) {
+        const event = nftIface.decodeEventLog(
+          'NFTBurned',
+          log.data,
+          log.topics,
+        );
+        await this.gameService.deleteNftMetadata(
+          event.owner.toLowerCase(),
+          event.id.toNumber(),
+        );
+      } else if (log.topics[0] === TOPIC0.transfer) {
+        const event = nftIface.decodeEventLog('Transfer', log.data, log.topics);
+        await this.gameService.nftTransferOwner(
+          event.to.toLowerCase(),
+          event.tokenId.toNumber(),
+        );
+      }
     }
   }
 }

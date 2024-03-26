@@ -1,22 +1,29 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './user.entity';
 
-@ObjectType()
 @Entity()
 export class Card {
-  @Field(() => ID)
-  @PrimaryColumn()
-  id: string; // user address
+  @PrimaryGeneratedColumn()
+  id: string;
 
-  @Field(() => String)
   @Column()
-  rewarded: string;
+  cardId: number;
 
-  @Field(() => String)
+  @ManyToOne(() => User, (photo) => photo.cards)
+  user: User;
+
+  @Column()
+  flipped: boolean;
+
+  @Column()
+  nftId: number;
+
   @Column()
   reward: string;
-
-  @Field(() => String)
-  @Column({ name: 'num_of_flip' })
-  numOfFlip: string;
 }

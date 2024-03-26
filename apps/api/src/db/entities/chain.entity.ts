@@ -7,7 +7,4 @@ export class Chain {
 
   @Column()
   blockNumber: number;
-
-  @Column()
-  reward: number;
 }
