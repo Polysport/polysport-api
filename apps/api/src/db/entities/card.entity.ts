@@ -15,4 +15,8 @@ export class Card {
   @Field(() => String)
   @Column()
   reward: string;
+
+  @Field(() => String)
+  @Column({ name: 'num_of_flip' })
+  numOfFlip: string;
 }

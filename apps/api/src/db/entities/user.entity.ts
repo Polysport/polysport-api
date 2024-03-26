@@ -1,22 +1,21 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { NFT } from './nft.entity';
 
 @ObjectType()
 @Entity()
-export class Pool {
+export class User {
   @Field(() => ID)
   @PrimaryColumn()
   id: string; // user address
 
   @Field(() => String)
-  @Column()
-  rewarded: string;
+  numOfFlip: string;
 
   @Field(() => String)
   @Column()
-  reward: string;
+  rewarded: string;
 
   @Field(() => Int)
-  @Column()
-  burnedNftId: number;
+  burnedNft: NFT;
 }
