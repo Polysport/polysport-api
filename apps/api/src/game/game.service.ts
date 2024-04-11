@@ -84,14 +84,15 @@ export class GameService {
 
     const nftId = Math.floor(Math.random() * 200);
 
-    const iface = this.web3Service.getContractInterface(Erc20Abi);
-    const erc20 = this.web3Service.getContract(
-      appConfig.tokenAddress,
+
+    const iface = this.web3Service.getContractInterface(PoolAbi);
+    const pool = this.web3Service.getContract(
+      appConfig.poolAddress,
       iface,
-      this.web3Service.getProvider(randomRPC()),
+      this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
     );
 
-    const poolReward = await erc20.balanceOf(appConfig.poolAddress);
+    const poolReward = await pool.getReward(appConfig.tokenAddress);
 
     let win: EWin = EWin.LOSE;
 
@@ -107,14 +108,6 @@ export class GameService {
       win = EWin.WIN;
     }
 
-    await this.cardRepo.save({
-      cardId: dto.cardId,
-      user: user,
-      flipped: true,
-      nftId,
-      reward: reward.toString(),
-    });
-
     user.numOfFlip--;
     if (!reward.eq(ethers.constants.Zero)) {
       user.rewarded = BigNumber.from(user.rewarded || '0')
@@ -123,7 +116,20 @@ export class GameService {
     }
 
     await this.userRepo.save(user);
-    return win;
+
+    await this.cardRepo.save({
+      cardId: dto.cardId,
+      user: user,
+      flipped: true,
+      nftId,
+      reward: reward.toString(),
+    });
+
+    return pool.setRewarded(
+      appConfig.tokenAddress,
+      dto.account,
+      reward,
+    );
   }
 
   async withdraw(dto: WithdrawDto) {
@@ -197,15 +203,16 @@ export class GameService {
       uri: `${appConfig.s3PublicUrl}/${id}.json`,
     });
 
-    return this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: appConfig.s3Bucket,
-        Key: `${id}.json`,
-        Body: JSON.stringify(metadata),
-        ContentType: 'application/json',
-        ACL: 'public-read',
-      }),
-    );
+    // TODO
+    // return this.s3Client.send(
+    //   new PutObjectCommand({
+    //     Bucket: appConfig.s3Bucket,
+    //     Key: `${id}.json`,
+    //     Body: JSON.stringify(metadata),
+    //     ContentType: 'application/json',
+    //     ACL: 'public-read',
+    //   }),
+    // );
   }
 
   async deleteNftMetadata(owner: string, id: number) {
@@ -234,12 +241,13 @@ export class GameService {
       await this.cardRepo.delete({ user: user });
     }
 
-    return this.s3Client.send(
-      new DeleteObjectCommand({
-        Bucket: appConfig.s3Bucket,
-        Key: `${id}.json`,
-      }),
-    );
+    // TODO
+    // return this.s3Client.send(
+    //   new DeleteObjectCommand({
+    //     Bucket: appConfig.s3Bucket,
+    //     Key: `${id}.json`,
+    //   }),
+    // );
   }
 
   async nftTransferOwner(newOwner: string, id: number) {

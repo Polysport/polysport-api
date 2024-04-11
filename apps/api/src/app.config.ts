@@ -22,7 +22,7 @@ export const appConfig = {
 
   nftAddress: configService.get('NFT_ADDRESS'),
   tokenAddress: configService.get('TOKEN_ADDRESS'),
-  poolAddress: configService.get('POOL_ADDRESS'),
+  poolAddress: configService.get('GAME_POOL'),
 };
 
 export const dbConfig = {
