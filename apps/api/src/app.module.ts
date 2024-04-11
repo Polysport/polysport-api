@@ -22,7 +22,6 @@ import { GameModule } from './game/game.module';
         redis: {
           host: configService.get('REDIS_HOST'),
           port: configService.get('REDIS_PORT'),
-          password: configService.get('REDIS_PASSWORD'),
           db: configService.get('REDIS_DB'),
         },
       }),
@@ -34,7 +33,6 @@ import { GameModule } from './game/game.module';
         config: {
           host: configService.get('REDIS_HOST'),
           port: configService.get('REDIS_PORT'),
-          password: configService.get('REDIS_PASSWORD'),
           db: configService.get('REDIS_DB'),
         },
       }),
