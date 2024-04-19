@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { NFT } from './nft.entity';
 import { Card } from './card.entity';
+import { Withdraw } from './withdraw.entity';
 
 @Entity()
 export class User {
@@ -29,4 +30,7 @@ export class User {
 
   @OneToMany(() => NFT, (nft) => nft.owner)
   nfts: NFT[];
+
+  @OneToMany(() => Withdraw, (entity) => entity.owner)
+  withdraws: Withdraw[];
 }

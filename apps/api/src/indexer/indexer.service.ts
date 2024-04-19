@@ -92,10 +92,18 @@ export class IndexerService {
       // get pair created
       const logs: ethers.providers.Log[] = await provider.send('eth_getLogs', [
         {
-          address: [appConfig.nftAddress],
+          address: [appConfig.nftAddress, appConfig.poolAddress],
           fromBlock: formattedHexString(currentFromBlock),
           toBlock: formattedHexString(currentToBlock),
-          topics: [[TOPIC0.mint, TOPIC0.burn, TOPIC0.transfer]],
+          topics: [
+            [
+              TOPIC0.mint,
+              TOPIC0.burn,
+              TOPIC0.transfer,
+              TOPIC0.newWithdraw,
+              TOPIC0.claimWithdraw,
+            ],
+          ],
         },
       ]);
 
@@ -113,7 +121,7 @@ export class IndexerService {
         id: '1',
         blockNumber: currentToBlock,
       });
-      // await sleep(1000);
+      await sleep(200);
       return this._handleListenEvents(currentToBlock + 1, _toBlock);
     } catch (error) {
       console.log(

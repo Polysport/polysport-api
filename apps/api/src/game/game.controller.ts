@@ -17,8 +17,8 @@ export class GameController {
     return this.gameService.flip(dto);
   }
 
-  @Post('/withdraw')
-  withdraw(@Body() dto: WithdrawDto) {
-    return this.gameService.withdraw(dto);
-  }
+  // @Post('/withdraw')
+  // withdraw(@Body() dto: WithdrawDto) {
+  //   return this.gameService.withdraw(dto);
+  // }
 }

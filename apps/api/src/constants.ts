@@ -6,7 +6,7 @@ export const INDEXER_PROCESS_NAME = 'POLYSPORT_INDEXER_PROCESS';
 
 export const randomRPC = (): string => sample(appConfig.rpc.split(','));
 
-export const DEFAULT_BLOCK_NUMBER = 47320848;
+export const DEFAULT_BLOCK_NUMBER = 5803678;
 export const CHUNK_BLOCK_NUMBER = 1000;
 
 export enum EWin {
@@ -20,6 +20,10 @@ export const TOPIC0 = {
   burn: '0xd6a6bcd88cdc4656d5f4e14e7dfbc9bc3f2f9811f8d6b508f3bee7d999d4d41c',
   transfer:
     '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  newWithdraw:
+    '0x87b7a9691174b1e582a55e4c8632edfdf49abf8120c0abb8a9c69e08f3d3ac82',
+  claimWithdraw:
+    '0x70eb43c4a8ae8c40502dcf22436c509c28d6ff421cf07c491be56984bd987068',
 };
 
 export const ID_ATTRIBUTE_MAPPING = {

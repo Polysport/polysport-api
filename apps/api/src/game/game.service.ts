@@ -21,7 +21,7 @@ import {
   WITHDRAW_MSG,
   randomRPC,
 } from '../constants';
-import { NFT, User } from '../db/entities';
+import { NFT, User, Withdraw } from '../db/entities';
 import { Card } from '../db/entities/card.entity';
 import { FlipDto } from './dto/flip.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
@@ -38,6 +38,8 @@ export class GameService {
     private userRepo: Repository<User>,
     @InjectRepository(Card)
     private cardRepo: Repository<Card>,
+    @InjectRepository(Withdraw)
+    private withdrawRepo: Repository<Withdraw>,
   ) {
     this.s3Client = new S3Client({
       endpoint: appConfig.s3Endpoint,
@@ -58,8 +60,62 @@ export class GameService {
         burnedNft: true,
         nfts: true,
         cards: true,
+        withdraws: true,
+      },
+      order: {
+        withdraws: {
+          claimTime: 'DESC',
+        },
       },
     });
+  }
+
+  private async _getReward(
+    nftId: number,
+    burnedNftId: number,
+  ): Promise<{
+    win: EWin;
+    reward: BigNumber;
+  }> {
+    let win: EWin = EWin.LOSE;
+    let reward: BigNumber = BigNumber.from('0');
+
+    const nftStar = this.getStarCountForNftId(nftId);
+    const burnedStar = this.getStarCountForNftId(nftId);
+
+    if (nftId !== burnedNftId && nftStar !== burnedStar)
+      return {
+        win,
+        reward,
+      };
+
+    const iface = this.web3Service.getContractInterface(PoolAbi);
+    const pool = this.web3Service.getContract(
+      appConfig.poolAddress,
+      iface,
+      this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
+    );
+
+    const poolReward = await pool.getReward(appConfig.tokenAddress);
+
+    if (nftId == burnedNftId) {
+      win = EWin.JACKPOT;
+      reward = BigNumber.from('1')
+        .mul(BigNumber.from(nftStar))
+        .mul(poolReward)
+        .div(BigNumber.from('100'));
+    } else if (nftStar === burnedStar) {
+      reward = BigNumber.from('1')
+        .mul(BigNumber.from(nftStar))
+        .mul(poolReward)
+        .div(BigNumber.from('1000'));
+      win = EWin.WIN;
+    }
+
+    return {
+      win,
+      reward,
+    };
   }
 
   async flip(dto: FlipDto) {
@@ -84,29 +140,7 @@ export class GameService {
 
     const nftId = Math.floor(Math.random() * 200);
 
-
-    const iface = this.web3Service.getContractInterface(PoolAbi);
-    const pool = this.web3Service.getContract(
-      appConfig.poolAddress,
-      iface,
-      this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
-    );
-
-    const poolReward = await pool.getReward(appConfig.tokenAddress);
-
-    let win: EWin = EWin.LOSE;
-
-    let reward: BigNumber = BigNumber.from('0');
-    if (nftId == user.burnedNft.nftId) {
-      win = EWin.JACKPOT;
-      reward = BigNumber.from('50').mul(poolReward).div(BigNumber.from('100'));
-    } else if (
-      this.getStarCountForNftId(nftId) ===
-      this.getStarCountForNftId(user.burnedNft.nftId)
-    ) {
-      reward = BigNumber.from('2').mul(poolReward).div(BigNumber.from('100'));
-      win = EWin.WIN;
-    }
+    let { win, reward } = await this._getReward(nftId, user.burnedNft.nftId);
 
     user.numOfFlip--;
     if (!reward.eq(ethers.constants.Zero)) {
@@ -117,7 +151,7 @@ export class GameService {
 
     await this.userRepo.save(user);
 
-    await this.cardRepo.save({
+    card = await this.cardRepo.save({
       cardId: dto.cardId,
       user: user,
       flipped: true,
@@ -125,53 +159,62 @@ export class GameService {
       reward: reward.toString(),
     });
 
-    return pool.setRewarded(
-      appConfig.tokenAddress,
-      dto.account,
-      reward,
-    );
-  }
+    let tx: any;
 
-  async withdraw(dto: WithdrawDto) {
-    if (
-      !this.web3Service.verifySignature(
-        dto.account,
-        dto.signature,
-        `${WITHDRAW_MSG} ${dto.amount}`,
-      )
-    )
-      throw new BadRequestException('Invalid signature');
-
-    let user = await this.findOrCreateUser(dto.account);
-
-    if (BigNumber.from(user.rewarded || '0').lt(BigNumber.from(dto.amount)))
-      throw new BadRequestException('Insufficient amount to withdraw');
-
-    const iface = this.web3Service.getContractInterface(PoolAbi);
-    const pool = this.web3Service.getContract(
-      appConfig.poolAddress,
-      iface,
-      this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
-    );
-
-    user.rewarded = BigNumber.from(user.rewarded || '0')
-      .sub(BigNumber.from(dto.amount))
-      .toString();
-    await this.userRepo.save(user);
-
-    try {
-      return pool.transferToken(
-        appConfig.tokenAddress,
-        dto.account,
-        dto.amount,
+    if (reward.gt(BigNumber.from(0))) {
+      const iface = this.web3Service.getContractInterface(PoolAbi);
+      const pool = this.web3Service.getContract(
+        appConfig.poolAddress,
+        iface,
+        this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
       );
-    } catch (error) {
-      console.log(
-        '🚀 ~ file: game.service.ts:161 ~ GameService ~ withdraw ~ error:',
-        error,
-      );
+
+      tx = await pool.setRewarded(appConfig.tokenAddress, dto.account, reward);
     }
+
+    return { tx, win, reward: reward.toString(), card };
   }
+
+  // async withdraw(dto: WithdrawDto) {
+  //   if (
+  //     !this.web3Service.verifySignature(
+  //       dto.account,
+  //       dto.signature,
+  //       `${WITHDRAW_MSG} ${dto.amount}`,
+  //     )
+  //   )
+  //     throw new BadRequestException('Invalid signature');
+
+  //   let user = await this.findOrCreateUser(dto.account);
+
+  //   if (BigNumber.from(user.rewarded || '0').lt(BigNumber.from(dto.amount)))
+  //     throw new BadRequestException('Insufficient amount to withdraw');
+
+  //   const iface = this.web3Service.getContractInterface(PoolAbi);
+  //   const pool = this.web3Service.getContract(
+  //     appConfig.poolAddress,
+  //     iface,
+  //     this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
+  //   );
+
+  //   user.rewarded = BigNumber.from(user.rewarded || '0')
+  //     .sub(BigNumber.from(dto.amount))
+  //     .toString();
+  //   await this.userRepo.save(user);
+
+  //   try {
+  //     return pool.transferToken(
+  //       appConfig.tokenAddress,
+  //       dto.account,
+  //       dto.amount,
+  //     );
+  //   } catch (error) {
+  //     console.log(
+  //       '🚀 ~ file: game.service.ts:161 ~ GameService ~ withdraw ~ error:',
+  //       error,
+  //     );
+  //   }
+  // }
 
   async addNftMetadata(owner: string, id: number, grade: number) {
     const nftId = this.randomNftForGrade(grade);
@@ -227,9 +270,6 @@ export class GameService {
       user.numOfFlip = 0;
     }
 
-    const exists = await this.checkExistS3File(`${id}.json`);
-    if (!exists) return;
-
     const nft = await this.nftRepo.findOne({
       where: { id },
     });
@@ -242,12 +282,17 @@ export class GameService {
     }
 
     // TODO
+    // const exists = await this.checkExistS3File(`${id}.json`);
+    // if (!exists) return;
+
     // return this.s3Client.send(
     //   new DeleteObjectCommand({
     //     Bucket: appConfig.s3Bucket,
     //     Key: `${id}.json`,
     //   }),
     // );
+
+    return user.numOfFlip;
   }
 
   async nftTransferOwner(newOwner: string, id: number) {
@@ -277,6 +322,52 @@ export class GameService {
     }
 
     return user;
+  }
+
+  withdrawClaimTime(time: number, orderType: number) {
+    let add: number = 0;
+    if (orderType === 1) add = 86400;
+    if (orderType === 2) add = 259200;
+    return time + add;
+  }
+
+  async createWithdraw(
+    account: string,
+    orderType: BigNumber,
+    orderId: BigNumber,
+    amount: BigNumber,
+    time: number,
+  ) {
+    const user = await this.findOrCreateUser(account);
+    let withdraw = await this.withdrawRepo.findOne({
+      where: {
+        withdrawId: orderId.toNumber(),
+      },
+    });
+
+    if (withdraw) return withdraw;
+
+    withdraw = new Withdraw();
+    withdraw.orderType = orderType.toNumber();
+    withdraw.owner = user;
+    withdraw.withdrawId = orderId.toNumber();
+    withdraw.amount = +ethers.utils.formatEther(amount);
+    withdraw.claimTime = this.withdrawClaimTime(time, orderType.toNumber());
+    await this.withdrawRepo.save(withdraw);
+
+    return withdraw;
+  }
+
+  async claimWithdraw(orderId: BigNumber) {
+    let withdraw = await this.withdrawRepo.update(
+      {
+        withdrawId: orderId.toNumber(),
+      },
+      {
+        claimed: true,
+      },
+    );
+    return withdraw;
   }
 
   private async checkExistS3File(key: string) {
