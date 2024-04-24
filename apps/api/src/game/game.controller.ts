@@ -5,20 +5,30 @@ import { WithdrawDto } from './dto/withdraw.dto';
 
 @Controller('game')
 export class GameController {
-  constructor(private gameService: GameService) {}
+    constructor(private gameService: GameService) {}
 
-  @Get('/stats')
-  getNfts(@Query('account') account: string) {
-    return this.gameService.getUserStats(account.toLowerCase());
-  }
+    @Get('/stats')
+    getNfts(@Query('account') account: string) {
+        return this.gameService.getUserStats(account.toLowerCase());
+    }
 
-  @Post('/flip')
-  flip(@Body() dto: FlipDto) {
-    return this.gameService.flip(dto);
-  }
+    @Get('/leader-board/nft')
+    getLeaderBoardNft() {
+        return this.gameService.getLeaderBoardNft();
+    }
 
-  // @Post('/withdraw')
-  // withdraw(@Body() dto: WithdrawDto) {
-  //   return this.gameService.withdraw(dto);
-  // }
+    @Get('/leader-board/rewarded')
+    getLeaderBoardRewarded() {
+        return this.gameService.getLeaderBoardRewarded();
+    }
+
+    @Post('/flip')
+    flip(@Body() dto: FlipDto) {
+        return this.gameService.flip(dto);
+    }
+
+    // @Post('/withdraw')
+    // withdraw(@Body() dto: WithdrawDto) {
+    //   return this.gameService.withdraw(dto);
+    // }
 }

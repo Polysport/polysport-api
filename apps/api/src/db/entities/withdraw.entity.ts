@@ -3,24 +3,24 @@ import { User } from './user.entity';
 
 @Entity()
 export class Withdraw {
-  @PrimaryGeneratedColumn()
-  id: string;
+    @PrimaryGeneratedColumn()
+    id: string;
 
-  @Column()
-  withdrawId: number;
+    @Column()
+    withdrawId: number;
 
-  @ManyToOne(() => User, (user) => user.withdraws)
-  owner: User;
+    @ManyToOne(() => User, (user) => user.withdraws)
+    owner: User;
 
-  @Column()
-  amount: number;
+    @Column()
+    amount: string;
 
-  @Column()
-  orderType: number;
+    @Column()
+    orderType: number;
 
-  @Column()
-  claimTime: number;
+    @Column()
+    claimTime: number;
 
-  @Column({ default: false })
-  claimed: boolean;
+    @Column({ default: false })
+    claimed: boolean;
 }

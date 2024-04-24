@@ -21,6 +21,9 @@ export class Card {
   @Column()
   flipped: boolean;
 
+  @Column({ nullable: true })
+  userFlipped: boolean;
+
   @Column()
   nftId: number;
 
