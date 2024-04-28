@@ -419,7 +419,16 @@ export class GameService {
             user.burnedNft = nft;
             await this.userRepo.save(user);
             await this.cardRepo.delete({ user: user });
-            await this.nftRepo.delete({ id: nft.id });
+
+            const zero = await this.findOrCreateUser(
+                ethers.constants.AddressZero,
+            );
+            await this.nftRepo.update(
+                { id: nft.id },
+                {
+                    owner: zero,
+                },
+            );
 
             const randNftIds = this.randomFromStar(star);
 
