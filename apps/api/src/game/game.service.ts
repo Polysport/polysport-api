@@ -18,13 +18,17 @@ import {
     FLIP_MSG,
     ID_ATTRIBUTE_MAPPING,
     ID_PICTURE_MAPPING,
+    TOPIC0,
     WITHDRAW_MSG,
     randomRPC,
 } from '../constants';
-import { NFT, User, Withdraw } from '../db/entities';
+import { NFT, Reward, TxnLog, User, Withdraw } from '../db/entities';
 import { Card } from '../db/entities/card.entity';
 import { FlipDto } from './dto/flip.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
+import { ERewardStatus } from '../types';
+import { BurnDto } from './dto/burn.dto';
+import * as NftAbi from '../abis/nft.json';
 
 export const GRADE_PRICE = {
     [0]: '100',
@@ -46,6 +50,10 @@ export class GameService {
         private cardRepo: Repository<Card>,
         @InjectRepository(Withdraw)
         private withdrawRepo: Repository<Withdraw>,
+        @InjectRepository(Reward)
+        private rewardRepo: Repository<Reward>,
+        @InjectRepository(TxnLog)
+        private txnLogRepo: Repository<TxnLog>,
     ) {
         this.s3Client = new S3Client({
             endpoint: appConfig.s3Endpoint,
@@ -75,6 +83,8 @@ export class GameService {
             },
         });
 
+        if (!user) return undefined;
+
         if (user.numOfFlip == 0) return user;
 
         user.cards = user.cards.filter((c) => c.flipped);
@@ -85,7 +95,7 @@ export class GameService {
     async getLeaderBoardNft() {
         return this.userRepo.find({
             where: {
-                accMinted: Not('0'),
+                accMinted: Not(0),
             },
             order: {
                 accMinted: 'DESC',
@@ -154,6 +164,51 @@ export class GameService {
         };
     }
 
+    async burn(dto: BurnDto) {
+        const provider = this.web3Service.getProvider(randomRPC());
+
+        const txReceipt = await provider.getTransactionReceipt(dto.txHash);
+
+        const nftIface = this.web3Service.getContractInterface(NftAbi);
+        const logs = txReceipt.logs;
+
+        const length = logs.length;
+        for (let i = 0; i < length; i++) {
+            const log = logs[i];
+
+            if (log.topics[0] === TOPIC0.burn) {
+                const event = nftIface.decodeEventLog(
+                    'NFTBurned',
+                    log.data,
+                    log.topics,
+                );
+                await this.deleteNftMetadata(
+                    log.transactionHash,
+                    log.logIndex,
+                    event.owner.toLowerCase(),
+                    event.id.toNumber(),
+                );
+            }
+        }
+    }
+
+    async setReward(spender: string, reward: BigNumber) {
+        const iface = this.web3Service.getContractInterface(PoolAbi);
+        const pool = this.web3Service.getContract(
+            appConfig.poolAddress,
+            iface,
+            this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
+        );
+
+        const tx = await pool.setRewarded(
+            appConfig.tokenAddress,
+            spender,
+            reward,
+        );
+
+        return tx;
+    }
+
     async flip(dto: FlipDto) {
         if (
             !this.web3Service.verifySignature(
@@ -192,24 +247,29 @@ export class GameService {
                 .add(reward)
                 .toString();
 
-            const iface = this.web3Service.getContractInterface(PoolAbi);
-            const pool = this.web3Service.getContract(
-                appConfig.poolAddress,
-                iface,
-                this.web3Service.getSigner(
-                    appConfig.operatorPrivKey,
-                    randomRPC(),
-                ),
-            );
+            // const iface = this.web3Service.getContractInterface(PoolAbi);
+            // const pool = this.web3Service.getContract(
+            //     appConfig.poolAddress,
+            //     iface,
+            //     this.web3Service.getSigner(
+            //         appConfig.operatorPrivKey,
+            //         randomRPC(),
+            //     ),
+            // );
 
-            tx = await pool.setRewarded(
-                appConfig.tokenAddress,
-                dto.account,
-                reward,
-            );
+            // tx = await pool.setRewarded(
+            //     appConfig.tokenAddress,
+            //     dto.account,
+            //     reward,
+            // );
+            await this.rewardRepo.save({
+                cardId: dto.cardId,
+                user: user,
+                nftId: card.nftId,
+                reward: reward.toString(),
+                status: ERewardStatus.processing,
+            });
         }
-
-        await this.userRepo.save(user);
 
         await this.userRepo.save(user);
 
@@ -264,14 +324,26 @@ export class GameService {
     //   }
     // }
 
-    async addNftMetadata(owner: string, id: number, grade: number) {
+    async addNftMetadata(
+        txHash: string,
+        logIndex: number,
+        owner: string,
+        id: number,
+        grade: number,
+    ) {
         const nftId = this.randomNftForGrade(grade);
 
-        const exists = await this.checkExistS3File(`${id}.json`);
-        if (exists) return;
+        // const exists = await this.checkExistS3File(`${id}.json`);
+        // if (exists) return;
 
         const nft = await this.nftRepo.findOne({ where: { id } });
         if (nft) return;
+
+        await this.txnLogRepo.save({
+            txHash,
+            logIndex: BigNumber.from(logIndex).toNumber(),
+            event: 'NFTMinted',
+        });
 
         const metadata = {
             image: `https://ipfs.filebase.io/ipfs/${ID_PICTURE_MAPPING[nftId]}`,
@@ -294,9 +366,7 @@ export class GameService {
             uri: `${appConfig.s3PublicUrl}/${id}.json`,
         });
 
-        user.accMinted = BigNumber.from(user.accMinted ?? '0')
-            .add(ethers.utils.parseEther(GRADE_PRICE[grade]))
-            .toString();
+        user.accMinted = user.accMinted + 1;
 
         await this.userRepo.save(user);
 
@@ -312,17 +382,13 @@ export class GameService {
         // );
     }
 
-    async deleteNftMetadata(owner: string, id: number) {
-        let user = await this.userRepo.findOne({
-            where: { id: owner.toLowerCase() },
-        });
-
-        if (!user) {
-            user = new User();
-            user.id = owner.toLowerCase();
-            user.rewarded = '0';
-            user.numOfFlip = 0;
-        }
+    async deleteNftMetadata(
+        txHash: string,
+        logIndex: number,
+        owner: string,
+        id: number,
+    ) {
+        let user = await this.findOrCreateUser(owner);
 
         const nft = await this.nftRepo.findOne({
             where: { id },
@@ -330,11 +396,30 @@ export class GameService {
 
         const star = this.getStarCountForNftId(nft.nftId);
 
+        const _idx = BigNumber.from(logIndex).toNumber();
+
+        const log = await this.txnLogRepo.findOne({
+            where: {
+                txHash,
+                logIndex: _idx,
+                event: 'NFTBurned',
+            },
+        });
+
+        if (log) return;
+
         if (nft) {
+            await this.txnLogRepo.save({
+                txHash,
+                logIndex: _idx,
+                event: 'NFTBurned',
+            });
+
             user.numOfFlip = star;
             user.burnedNft = nft;
             await this.userRepo.save(user);
             await this.cardRepo.delete({ user: user });
+            await this.nftRepo.delete({ id: nft.id });
 
             const randNftIds = this.randomFromStar(star);
 
@@ -386,7 +471,7 @@ export class GameService {
         if (!user) {
             user = new User();
             user.id = id.toLowerCase();
-            user.rewarded = '';
+            user.rewarded = '0';
             user.numOfFlip = 0;
             await this.userRepo.save(user);
         }

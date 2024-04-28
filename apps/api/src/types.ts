@@ -6,3 +6,9 @@ export type STARKNET_EVENT = {
     keys: string[];
     data: string[];
 };
+
+export enum ERewardStatus {
+    processing = 'processing',
+    success = 'success',
+    failed = 'failed',
+}

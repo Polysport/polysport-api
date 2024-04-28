@@ -9,6 +9,7 @@ import {
 import { NFT } from './nft.entity';
 import { Card } from './card.entity';
 import { Withdraw } from './withdraw.entity';
+import { Reward } from './reward.entity';
 
 @Entity()
 export class User {
@@ -21,8 +22,8 @@ export class User {
     @Column()
     rewarded: string;
 
-    @Column({ default: '0' })
-    accMinted: string;
+    @Column({ default: 0 })
+    accMinted: number;
 
     @Column({ default: '0' })
     accRewarded: string;
@@ -39,4 +40,7 @@ export class User {
 
     @OneToMany(() => Withdraw, (entity) => entity.owner)
     withdraws: Withdraw[];
+
+    @OneToMany(() => Reward, (entity) => entity.user)
+    rewards: Reward[];
 }

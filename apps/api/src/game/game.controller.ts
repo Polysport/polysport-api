@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { GameService } from './game.service';
 import { FlipDto } from './dto/flip.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
+import { BurnDto } from './dto/burn.dto';
 
 @Controller('game')
 export class GameController {
@@ -20,6 +21,11 @@ export class GameController {
     @Get('/leader-board/rewarded')
     getLeaderBoardRewarded() {
         return this.gameService.getLeaderBoardRewarded();
+    }
+
+    @Post('/burn')
+    burn(@Body() dto: BurnDto) {
+        return this.gameService.burn(dto);
     }
 
     @Post('/flip')
