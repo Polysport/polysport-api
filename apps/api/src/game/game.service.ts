@@ -196,6 +196,25 @@ export class GameService {
         }
     }
 
+    async setRewards(spenders: string[], rewards: BigNumber[]) {
+        const iface = this.web3Service.getContractInterface(PoolAbi);
+        const pool = this.web3Service.getContract(
+            appConfig.poolAddress,
+            iface,
+            this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
+        );
+
+        const tx = await pool.setRewardedBatch(
+            appConfig.tokenAddress,
+            spenders,
+            rewards,
+        );
+
+        await tx.wait();
+
+        return tx;
+    }
+
     async setReward(spender: string, reward: BigNumber) {
         const iface = this.web3Service.getContractInterface(PoolAbi);
         const pool = this.web3Service.getContract(

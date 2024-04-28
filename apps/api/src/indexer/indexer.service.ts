@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Chain, NFT, Reward } from '../db/entities';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import {
     CHUNK_BLOCK_NUMBER,
     DEFAULT_BLOCK_NUMBER,
@@ -103,32 +103,32 @@ export class IndexerService {
                 skip: skip,
             });
 
-            k = rewards.length;
-            skip += take;
+            const ids = rewards.map((r) => r.id);
+            const accounts = rewards.map((r) => r.user.id);
+            const amounts = rewards.map((r) => BigNumber.from(r.reward));
 
-            for (let reward of rewards) {
-                try {
-                    const tx = await this.gameService.setReward(
-                        reward.user.id,
-                        BigNumber.from(reward.reward),
-                    );
-
-                    await this.rewardRepo.update(
-                        { id: reward.id },
-                        {
-                            status: ERewardStatus.success,
-                        },
-                    );
-
-                    await sleep(1000);
-                } catch (error) {
-                    await this.rewardRepo.update(
-                        { id: reward.id },
-                        {
-                            status: ERewardStatus.failed,
-                        },
-                    );
-                }
+            try {
+                const tx = await this.gameService.setRewards(accounts, amounts);
+                await this.rewardRepo.update(
+                    {
+                        id: In([...ids]),
+                    },
+                    { status: ERewardStatus.success },
+                );
+                k = rewards.length;
+                skip += take;
+                await sleep(5000); // TODO
+            } catch (error) {
+                console.log(
+                    '🚀 ~ file: indexer.service.ts:116 ~ IndexerService ~ _setRewards ~ error:',
+                    error,
+                );
+                await this.rewardRepo.update(
+                    {
+                        id: In([...ids]),
+                    },
+                    { status: ERewardStatus.failed },
+                );
             }
         }
     }
