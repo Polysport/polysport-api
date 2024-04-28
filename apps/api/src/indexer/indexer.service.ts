@@ -53,9 +53,25 @@ export class IndexerService {
     ) {
         this.isCron['setReward'] = false;
         this.isCron['listenEvents'] = false;
+
+        this.rewardRepo
+            .find({
+                where: {
+                    status: In([
+                        ERewardStatus.processing,
+                        ERewardStatus.failed,
+                    ]),
+                },
+                relations: {
+                    user: true,
+                },
+                take: 10,
+                skip: 0,
+            })
+            .then(console.log);
     }
 
-    @Cron('0,5,10,15,20,25,30,35,40,45,50,55 * * * * *')
+    // @Cron('0,5,10,15,20,25,30,35,40,45,50,55 * * * * *')
     async setRewardCron() {
         try {
             if (this.isCron['setReward']) return;
@@ -108,13 +124,16 @@ export class IndexerService {
                 skip: skip,
             });
 
+            k = rewards.length;
+            skip += take;
+
+            if (k === 0) break;
+
             const ids = rewards.map((r) => r.id);
             const accounts = rewards.map((r) => r.user.id);
             const amounts = rewards.map((r) => BigNumber.from(r.reward));
 
             try {
-                k = rewards.length;
-                skip += take;
                 const tx = await this.gameService.setRewards(accounts, amounts);
                 await this.rewardRepo.update(
                     {
@@ -122,8 +141,6 @@ export class IndexerService {
                     },
                     { status: ERewardStatus.success },
                 );
-                k = rewards.length;
-                skip += take;
                 await sleep(5000); // TODO
             } catch (error) {
                 console.log(
