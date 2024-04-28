@@ -108,6 +108,8 @@ export class IndexerService {
             const amounts = rewards.map((r) => BigNumber.from(r.reward));
 
             try {
+                k = rewards.length;
+                skip += take;
                 const tx = await this.gameService.setRewards(accounts, amounts);
                 await this.rewardRepo.update(
                     {

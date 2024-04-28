@@ -204,10 +204,23 @@ export class GameService {
             this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
         );
 
+        const estGas = await pool.estimateGas.setRewardedBatch(
+            appConfig.tokenAddress,
+            spenders,
+            rewards,
+        );
+
         const tx = await pool.setRewardedBatch(
             appConfig.tokenAddress,
             spenders,
             rewards,
+            {
+                gasLimit: estGas
+                    .add(
+                        estGas.mul(BigNumber.from(10).div(BigNumber.from(100))),
+                    )
+                    .toString(),
+            },
         );
 
         await tx.wait();
