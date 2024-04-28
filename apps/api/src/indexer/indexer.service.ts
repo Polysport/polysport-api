@@ -95,7 +95,12 @@ export class IndexerService {
             skip = 0;
         while (k > 0) {
             const rewards = await this.rewardRepo.find({
-                where: { status: Not(ERewardStatus.success) },
+                where: {
+                    status: In([
+                        ERewardStatus.processing,
+                        ERewardStatus.failed,
+                    ]),
+                },
                 relations: {
                     user: true,
                 },
