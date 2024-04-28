@@ -55,14 +55,18 @@ export class GameService {
         @InjectRepository(TxnLog)
         private txnLogRepo: Repository<TxnLog>,
     ) {
-        this.s3Client = new S3Client({
-            endpoint: appConfig.s3Endpoint,
-            credentials: {
-                accessKeyId: appConfig.s3AccessKeyId,
-                secretAccessKey: appConfig.s3SecretAccessKey,
-            },
-            region: 'auto',
-        });
+        // this.s3Client = new S3Client({
+        //     endpoint: appConfig.s3Endpoint,
+        //     credentials: {
+        //         accessKeyId: appConfig.s3AccessKeyId,
+        //         secretAccessKey: appConfig.s3SecretAccessKey,
+        //     },
+        //     region: 'auto',
+        // });
+        // this.setReward(
+        //     '0xc03bb6f45f43f78a261ff5ed2ecba5ea42e6cb10',
+        //     BigNumber.from('651712000000000000000'),
+        // ).then(console.log);
     }
 
     async getUserStats(account: string) {
@@ -205,6 +209,8 @@ export class GameService {
             spender,
             reward,
         );
+
+        await tx.wait();
 
         return tx;
     }

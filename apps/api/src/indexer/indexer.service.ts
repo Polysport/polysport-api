@@ -108,7 +108,7 @@ export class IndexerService {
 
             for (let reward of rewards) {
                 try {
-                    await this.gameService.setReward(
+                    const tx = await this.gameService.setReward(
                         reward.user.id,
                         BigNumber.from(reward.reward),
                     );
