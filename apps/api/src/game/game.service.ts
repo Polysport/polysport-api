@@ -198,26 +198,34 @@ export class GameService {
 
     async setRewards(spenders: string[], rewards: BigNumber[]) {
         const iface = this.web3Service.getContractInterface(PoolAbi);
+        const signer = this.web3Service.getSigner(
+            appConfig.operatorPrivKey,
+            randomRPC(),
+        );
         const pool = this.web3Service.getContract(
             appConfig.poolAddress,
             iface,
-            this.web3Service.getSigner(appConfig.operatorPrivKey, randomRPC()),
+            signer,
         );
 
-        const estGas = await pool.estimateGas.setRewardedBatch(
-            appConfig.tokenAddress,
-            spenders,
-            rewards,
-        );
+        const gasPrice = await signer.getGasPrice();
+
+        // const estGas = await pool.estimateGas.setRewardedBatch(
+        //     appConfig.tokenAddress,
+        //     spenders,
+        //     rewards,
+        // );
 
         const tx = await pool.setRewardedBatch(
             appConfig.tokenAddress,
             spenders,
             rewards,
             {
-                gasLimit: estGas
+                gasPrice: gasPrice
                     .add(
-                        estGas.mul(BigNumber.from(10).div(BigNumber.from(100))),
+                        gasPrice.mul(
+                            BigNumber.from(10).div(BigNumber.from(100)),
+                        ),
                     )
                     .toString(),
             },
