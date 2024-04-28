@@ -119,6 +119,8 @@ export class IndexerService {
                             status: ERewardStatus.success,
                         },
                     );
+
+                    await sleep(1000);
                 } catch (error) {
                     await this.rewardRepo.update(
                         { id: reward.id },
