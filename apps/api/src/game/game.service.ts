@@ -208,7 +208,7 @@ export class GameService {
             signer,
         );
 
-        const gasPrice = await signer.getGasPrice();
+        const gasPrice = await signer.provider.getGasPrice();
 
         // const estGas = await pool.estimateGas.setRewardedBatch(
         //     appConfig.tokenAddress,
@@ -216,18 +216,16 @@ export class GameService {
         //     rewards,
         // );
 
+        const addPrice = gasPrice.mul(
+            BigNumber.from(10).div(BigNumber.from(100)),
+        );
+
         const tx = await pool.setRewardedBatch(
             appConfig.tokenAddress,
             spenders,
             rewards,
             {
-                gasPrice: gasPrice
-                    .add(
-                        gasPrice.mul(
-                            BigNumber.from(10).div(BigNumber.from(100)),
-                        ),
-                    )
-                    .toString(),
+                gasPrice: gasPrice.add(addPrice),
             },
         );
 
