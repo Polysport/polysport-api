@@ -114,7 +114,7 @@ export class GameService {
                 .createQueryBuilder('u')
                 .select('id')
                 .addSelect(`CAST("accRewarded" AS DECIMAL)`, 'accRewarded')
-                .orderBy('accRewarded', 'DESC')
+                .orderBy('"accRewarded"', 'DESC')
                 // .where(`"accRewarded" <> '0'`)
                 .take(10)
                 .getMany()
