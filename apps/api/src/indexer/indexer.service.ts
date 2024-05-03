@@ -8,6 +8,7 @@ import {
     DEFAULT_BLOCK_NUMBER,
     INDEXER_PROCESS_NAME,
     INDEXER_QUEUE_NAME,
+    SET_REWARD_PROCESS_NAME,
     TOPIC0,
     randomRPC,
 } from '../constants';
@@ -114,30 +115,23 @@ export class IndexerService {
             if (k === 0) break;
 
             const ids = rewards.map((r) => r.id);
-            const accounts = rewards.map((r) => r.user.id);
-            const amounts = rewards.map((r) => BigNumber.from(r.reward));
 
-            try {
-                const tx = await this.gameService.setRewards(accounts, amounts);
-                await this.rewardRepo.update(
-                    {
-                        id: In([...ids]),
-                    },
-                    { status: ERewardStatus.success },
-                );
-                await sleep(5000); // TODO
-            } catch (error) {
-                console.log(
-                    '🚀 ~ file: indexer.service.ts:116 ~ IndexerService ~ _setRewards ~ error:',
-                    error,
-                );
-                await this.rewardRepo.update(
-                    {
-                        id: In([...ids]),
-                    },
-                    { status: ERewardStatus.failed },
-                );
-            }
+            await this.rewardRepo.update(
+                {
+                    id: In([...ids]),
+                },
+                { status: ERewardStatus.setting },
+            );
+
+            await this.indexerQueue.add(
+                SET_REWARD_PROCESS_NAME,
+                {
+                    rewards: rewards,
+                },
+                {
+                    removeOnComplete: 20,
+                },
+            );
         }
     }
 

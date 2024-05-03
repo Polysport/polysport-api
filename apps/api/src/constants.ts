@@ -3,6 +3,7 @@ const sample = require('lodash/sample');
 
 export const INDEXER_QUEUE_NAME = 'POLYSPORT_INDEXER_QUEUE';
 export const INDEXER_PROCESS_NAME = 'POLYSPORT_INDEXER_PROCESS';
+export const SET_REWARD_PROCESS_NAME = 'POLYSPORT_SET_REWARD_PROCESS';
 
 export const randomRPC = (): string => sample(appConfig.rpc.split(','));
 

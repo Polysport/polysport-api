@@ -9,6 +9,7 @@ export type STARKNET_EVENT = {
 
 export enum ERewardStatus {
     processing = 'processing',
+    setting = 'setting',
     success = 'success',
     failed = 'failed',
 }

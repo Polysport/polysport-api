@@ -1,21 +1,28 @@
 import { Web3Service } from '@lib/web3';
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import * as NftAbi from '../abis/nft.json';
 import * as PoolAbi from '../abis/pool.json';
 import {
     INDEXER_PROCESS_NAME,
     INDEXER_QUEUE_NAME,
+    SET_REWARD_PROCESS_NAME,
     TOPIC0,
     randomRPC,
 } from '../constants';
 import { GameService } from '../game/game.service';
+import { Reward } from '../db/entities';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
+import { ERewardStatus } from '../types';
 
 @Processor(INDEXER_QUEUE_NAME)
 export class IndexerConsumer {
     constructor(
         private readonly web3Service: Web3Service,
+        @InjectRepository(Reward)
+        private rewardRepo: Repository<Reward>,
         private gameService: GameService,
     ) {}
 
@@ -95,6 +102,35 @@ export class IndexerConsumer {
             console.log(
                 '🚀 ~ file: indexer.consumer.ts:82 ~ IndexerConsumer ~ processEvents ~ error:',
                 error,
+            );
+        }
+    }
+
+    @Process(SET_REWARD_PROCESS_NAME)
+    async processSetRewarded(job: Job<{ rewards: Reward[] }>) {
+        const rewards = job.data.rewards;
+        const ids = rewards.map((r) => r.id);
+        const accounts = rewards.map((r) => r.user.id);
+        const amounts = rewards.map((r) => BigNumber.from(r.reward));
+
+        try {
+            const tx = await this.gameService.setRewards(accounts, amounts);
+            await this.rewardRepo.update(
+                {
+                    id: In([...ids]),
+                },
+                { status: ERewardStatus.success },
+            );
+        } catch (error) {
+            console.log(
+                '🚀 ~ file: indexer.consumer.ts:125 ~ IndexerConsumer ~ processSetRewarded ~ error:',
+                error,
+            );
+            await this.rewardRepo.update(
+                {
+                    id: In([...ids]),
+                },
+                { status: ERewardStatus.failed },
             );
         }
     }
