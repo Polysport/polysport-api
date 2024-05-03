@@ -223,9 +223,6 @@ export class GameService {
             appConfig.tokenAddress,
             spenders,
             rewards,
-            {
-                gasPrice: gasPrice.add(addPrice),
-            },
         );
 
         const addGas = estGas.mul(BigNumber.from(5).div(BigNumber.from(100)));
