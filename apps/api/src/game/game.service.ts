@@ -109,25 +109,14 @@ export class GameService {
     }
 
     async getLeaderBoardRewarded() {
-        return (
-            this.userRepo
-                .createQueryBuilder('u')
-                .select('id')
-                .addSelect(`CAST("accRewarded" AS DECIMAL)`, 'accRewarded')
-                .orderBy('"accRewarded"', 'DESC')
-                // .where(`"accRewarded" <> '0'`)
-                .take(10)
-                .getMany()
-        );
-        // return this.userRepo.find({
-        //     where: {
-        //         accRewarded: Not('0'),
-        //     },
-        //     order: {
-        //         accRewarded: 'DESC',
-        //     },
-        //     take: 10,
-        // });
+        return this.userRepo
+            .createQueryBuilder('u')
+            .select('id')
+            .addSelect(`CAST("accRewarded" AS DECIMAL)`, 'rewarded')
+            .orderBy('"rewarded"', 'DESC')
+            .where(`CAST("accRewarded" AS DECIMAL) > 0`)
+            .take(10)
+            .getRawMany();
     }
 
     private async _getReward(
