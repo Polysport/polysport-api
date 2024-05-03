@@ -216,15 +216,26 @@ export class GameService {
         // );
 
         const addPrice = gasPrice.mul(
-            BigNumber.from(10).div(BigNumber.from(100)),
+            BigNumber.from(5).div(BigNumber.from(100)),
         );
 
+        const estGas = await pool.estimateGas.setRewardedBatch(
+            appConfig.tokenAddress,
+            spenders,
+            rewards,
+            {
+                gasPrice: gasPrice.add(addPrice),
+            },
+        );
+
+        const addGas = estGas.mul(BigNumber.from(5).div(BigNumber.from(100)));
         const tx = await pool.setRewardedBatch(
             appConfig.tokenAddress,
             spenders,
             rewards,
             {
                 gasPrice: gasPrice.add(addPrice),
+                gasLimit: estGas.add(addGas),
             },
         );
 
