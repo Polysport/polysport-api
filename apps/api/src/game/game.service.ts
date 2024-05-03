@@ -112,7 +112,7 @@ export class GameService {
         return this.userRepo
             .createQueryBuilder('u')
             .select('id')
-            .addSelect('CAST(accRewarded AS DECIMAL)', 'accRewarded')
+            .addSelect('CAST("accRewarded" AS DECIMAL)', '"accRewarded"')
             .where("accRewarded <> '0'")
             .take(10)
             .getMany();
